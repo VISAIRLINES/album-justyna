@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Album dla Justyny 💜</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #fff;
+        }
+
+        /* Tło 3D */
+        #canvas3d {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Nawigacja */
+        .navbar {
+            backdrop-filter: blur(10px);
+            background: rgba(15, 12, 41, 0.7);
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 0 20px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-btn:hover:not(.disabled) {
+            background: rgba(168, 85, 247, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+        }
+
+        .nav-btn.disabled {
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+        }
+
+        /* Zawartość główna */
+        .content {
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            width: 100%;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Życzenia */
+        .wishes {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .wishes h1 {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #a855f7, #ec4899, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slideDown 0.8s ease;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .wishes-text {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            max-width: 700px;
+            margin: 0 auto 40px;
+            color: rgba(255, 255, 255, 0.9);
+            animation: slideUp 0.8s ease 0.2s both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .emoji-float {
+            display: inline-block;
+            font-size: 3rem;
+            margin: 0 10px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        /* Galeria */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 300px;
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 20px 40px rgba(168, 85, 247, 0.3);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(236, 72, 153, 0.4));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            position: relative;
+            background: rgba(15, 12, 41, 0.95);
+            border-radius: 16px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 85vh;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .wishes h1 {
+                font-size: 2.5rem;
+            }
+
+            .wishes-text {
+                font-size: 1.1rem;
+            }
+
+            .nav-content {
+                gap: 20px;
+            }
+
+            .nav-btn {
+                font-size: 14px;
+                padding: 8px 15px;
+            }
+
+            .gallery {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+
+            .gallery-item {
+                height: 200px;
+            }
+        }
+
+        /* Scroll smoothness */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas3d"></canvas>
+
+    <div class="container">
+        <!-- Nawigacja -->
+        <div class="navbar">
+            <div class="nav-content">
+                <button class="nav-btn active" data-tab="wishes">Życzenia</button>
+                <button class="nav-btn" data-tab="wspolne">Wspólne</button>
+                <button class="nav-btn" data-tab="nicea">Nicea</button>
+                <button class="nav-btn disabled" data-tab="tajlandia">Tajlandia</button>
+            </div>
+        </div>
+
+        <!-- Zawartość -->
+        <div class="content">
+            <!-- Życzenia -->
+            <div class="section active" id="wishes">
+                <div class="wishes">
+                    <span class="emoji-float">💜</span>
+                    <h1>Wszystkiego Najlepszego, Justyna!</h1>
+                    <span class="emoji-float">🎂</span>
+                    <div class="wishes-text">
+                        Życzę Ci pięknych 19 lat pełnych uśmiechu, przygód i nowych wspomnień. <br>
+                        Niech każdy dzień będzie tak magiczny, jak Ty.
+                    </div>
+                    <div class="wishes-text" style="font-size: 1.1rem; opacity: 0.8;">
+                        Dziękuję za każdą chwilę spędzoną razem. 💕
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wspólne zdjęcia -->
+            <div class="section" id="wspolne">
+                <div class="gallery" id="gallery-wspolne">
+                    <!-- Zdjęcia będą tu ładowane -->
+                </div>
+            </div>
+
+            <!-- Nicea -->
+            <div class="section" id="nicea">
+                <div class="gallery" id="gallery-nicea">
+                    <!-- Zdjęcia będą tu ładowane -->
+                </div>
+            </div>
+
+            <!-- Tajlandia -->
+            <div class="section" id="tajlandia">
+                <div class="gallery" id="gallery-tajlandia">
+                    <!-- Zdjęcia będą tu ładowane -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <img id="modalImage" src="" alt="">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        // Animacja 3D w tle
+        let scene, camera, renderer;
+
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('canvas3d'), 
+                alpha: true,
+                antialias: true
+            });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0.1);
+            camera.position.z = 5;
+
+            // Geometria - particlesów
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            
+            for (let i = 0; i < 1500; i++) {
+                vertices.push(
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000
+                );
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+
+            const material = new THREE.PointsMaterial({
+                color: 0xa855f7,
+                size: 2,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Animacja
+            function animate() {
+                requestAnimationFrame(animate);
+                particles.rotation.x += 0.0001;
+                particles.rotation.y += 0.0002;
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Responsywność
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Nawigacja
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.classList.contains('disabled')) return;
+
+                // Usuń active z obecnego
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+                // Dodaj active do klikniętego
+                this.classList.add('active');
+                const tabName = this.dataset.tab;
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Galeria zdjęć
+        function loadGallery(folderId, containerId) {
+            const container = document.getElementById(containerId);
+            
+            // Tutaj możesz zmienić nazwy zdjęć
+            const images = [
+                `zdjecia/${folderId}/1.jpg`,
+                `zdjecia/${folderId}/2.jpg`,
+                `zdjecia/${folderId}/3.jpg`,
+                `zdjecia/${folderId}/4.jpg`,
+                `zdjecia/${folderId}/5.jpg`,
+                `zdjecia/${folderId}/6.jpg`,
+            ];
+
+            images.forEach((img, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.style.animation = `scaleIn 0.6s ease-out ${index * 0.1}s both`;
+                
+                const image = document.createElement('img');
+                image.src = img;
+                image.alt = 'Zdjęcie';
+                image.onerror = () => {
+                    item.style.display = 'none';
+                };
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'gallery-overlay';
+                overlay.textContent = '🔍';
+                
+                item.appendChild(image);
+                item.appendChild(overlay);
+                item.addEventListener('click', () => openModal(img));
+                
+                container.appendChild(item);
+            });
+        }
+
+        // Modal
+        function openModal(src) {
+            const modal = document.getElementById('modal');
+            document.getElementById('modalImage').src = src;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Załaduj wszystko
+        window.addEventListener('load', () => {
+            init3D();
+            loadGallery('wspolne', 'gallery-wspolne');
+            loadGallery('nicea', 'gallery-nicea');
+            loadGallery('tajlandia', 'gallery-tajlandia');
+        });
+
+        // Zamknij modal przy kliknięciu poza
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') closeModal();
+        });
+    </script>
+</body>
+</html>
